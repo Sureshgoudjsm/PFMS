@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { formatCurrency, formatDate } from '../utils/format';
 import { ACCOUNT_TYPES, type Account } from '../types';
+import EmptyState from '../components/EmptyState';
+import { Wallet, Plus, X, Landmark } from 'lucide-react';
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -11,6 +13,8 @@ export default function AccountsPage() {
     account_type: 'Savings Account',
     credit_limit: '',
   });
+
+
 
   const load = () => api.getAccounts().then(setAccounts);
 
@@ -40,23 +44,23 @@ export default function AccountsPage() {
   const liabilities = accounts.filter((a) => liabilityTypes.includes(a.account_type));
 
   const AccountRow = ({ acc }: { acc: Account }) => (
-    <div className="flex items-center justify-between gap-4 py-3">
+    <div className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
       <div>
-        <p className="font-medium">{acc.account_name}</p>
-        <p className="text-xs text-slate-500">{acc.account_type}</p>
+        <p className="font-bold text-sm text-slate-200">{acc.account_name}</p>
+        <p className="text-[10px] text-slate-500 font-semibold font-mono uppercase tracking-wider mt-0.5">{acc.account_type}</p>
         {acc.credit_limit && (
-          <p className="text-xs text-slate-400">Limit: {formatCurrency(acc.credit_limit)}</p>
+          <p className="text-[10px] text-slate-400 font-mono mt-1">Limit: {formatCurrency(acc.credit_limit)}</p>
         )}
         {(acc.statement_date || acc.due_date) && (
-          <p className="text-xs text-slate-400">
-            {acc.statement_date && `Stmt: ${formatDate(acc.statement_date)}`}
+          <p className="text-[10px] text-slate-500 mt-1">
+            {acc.statement_date && `Statement: ${formatDate(acc.statement_date)}`}
             {acc.due_date && ` · Due: ${formatDate(acc.due_date)}`}
           </p>
         )}
       </div>
       <p
-        className={`text-lg font-bold ${
-          liabilityTypes.includes(acc.account_type) ? 'text-orange-500' : 'text-emerald-600 dark:text-emerald-400'
+        className={`text-base font-extrabold tabular-nums ${
+          liabilityTypes.includes(acc.account_type) ? 'text-orange-500' : 'text-emerald-400'
         }`}
       >
         {formatCurrency(acc.computed_balance)}
@@ -68,51 +72,72 @@ export default function AccountsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Accounts</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h2 className="text-2xl font-black text-slate-100 tracking-tight">Accounts</h2>
+          <p className="text-xs text-slate-400 font-medium font-mono uppercase tracking-wider mt-0.5">
             Balances computed dynamically from transaction history
           </p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'Add Account'}
+        <button
+          className="btn-primary flex items-center gap-2"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? (
+            <>
+              <X size={15} />
+              <span>Cancel</span>
+            </>
+          ) : (
+            <>
+              <Plus size={15} />
+              <span>Add Account</span>
+            </>
+          )}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="card grid gap-4 sm:grid-cols-3">
+        <form onSubmit={handleCreate} className="card p-6 space-y-4 border border-slate-800 bg-slate-900/40">
           <div>
-            <label className="label">Account Name</label>
-            <input
-              className="input"
-              required
-              value={form.account_name}
-              onChange={(e) => setForm({ ...form, account_name: e.target.value })}
-            />
+            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono">Create Account Card</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Define a ledger asset or liability account.</p>
           </div>
-          <div>
-            <label className="label">Account Type</label>
-            <select
-              className="input"
-              value={form.account_type}
-              onChange={(e) => setForm({ ...form, account_type: e.target.value })}
-            >
-              {ACCOUNT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">Account Name</label>
+              <input
+                className="input"
+                required
+                value={form.account_name}
+                onChange={(e) => setForm({ ...form, account_name: e.target.value })}
+                placeholder="e.g. SBI Savings"
+              />
+            </div>
+            <div>
+              <label className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">Account Type</label>
+              <select
+                className="input"
+                value={form.account_type}
+                onChange={(e) => setForm({ ...form, account_type: e.target.value })}
+              >
+                {ACCOUNT_TYPES.map((t) => (
+                  <option key={t} value={t} className="bg-[#0f172a] text-slate-200">
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">Credit Limit (optional)</label>
+              <input
+                type="number"
+                className="input"
+                value={form.credit_limit}
+                onChange={(e) => setForm({ ...form, credit_limit: e.target.value })}
+                placeholder="e.g. 50000"
+              />
+            </div>
           </div>
-          <div>
-            <label className="label">Credit Limit (optional)</label>
-            <input
-              type="number"
-              className="input"
-              value={form.credit_limit}
-              onChange={(e) => setForm({ ...form, credit_limit: e.target.value })}
-            />
-          </div>
-          <div className="sm:col-span-3">
+          <div className="flex justify-end border-t border-slate-800 pt-4">
             <button type="submit" className="btn-primary">
               Create Account
             </button>
@@ -120,28 +145,52 @@ export default function AccountsPage() {
         </form>
       )}
 
+      {/* Bento grid layout for Assets, Liabilities, and Telegram */}
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="card">
-          <h3 className="mb-2 font-semibold text-emerald-600 dark:text-emerald-400">Assets</h3>
-          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+        {/* Assets Panel */}
+        <div className="card border border-slate-800 bg-slate-900/40">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Assets
+            </h3>
+          </div>
+          <div className="divide-y divide-slate-800/80">
             {assets.length === 0 ? (
-              <p className="py-4 text-sm text-slate-500">No asset accounts</p>
+              <EmptyState
+                icon={Landmark}
+                title="No asset accounts"
+                description="Asset accounts represent your cash, savings, or investments."
+              />
             ) : (
               assets.map((a) => <AccountRow key={a.id} acc={a} />)
             )}
           </div>
         </div>
-        <div className="card">
-          <h3 className="mb-2 font-semibold text-orange-500">Liabilities</h3>
-          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+
+        {/* Liabilities Panel */}
+        <div className="card border border-slate-800 bg-slate-900/40">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
+              Liabilities
+            </h3>
+          </div>
+          <div className="divide-y divide-slate-800/80">
             {liabilities.length === 0 ? (
-              <p className="py-4 text-sm text-slate-500">No liability accounts</p>
+              <EmptyState
+                icon={Wallet}
+                title="No liability accounts"
+                description="Liabilities represent credit cards or active personal/gold loans."
+              />
             ) : (
               liabilities.map((a) => <AccountRow key={a.id} acc={a} />)
             )}
           </div>
         </div>
       </div>
+
+
     </div>
   );
 }

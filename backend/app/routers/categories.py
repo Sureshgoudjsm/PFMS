@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Category
+from app.models import Category, User
 from app.schemas import CategoryCreate, CategoryResponse
+from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
@@ -12,6 +13,7 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 def list_categories(
     parent_type: str | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     query = db.query(Category)
     if parent_type:
@@ -20,7 +22,11 @@ def list_categories(
 
 
 @router.post("", response_model=CategoryResponse, status_code=201)
-def create_category(data: CategoryCreate, db: Session = Depends(get_db)):
+def create_category(
+    data: CategoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     category = Category(**data.model_dump())
     db.add(category)
     db.commit()

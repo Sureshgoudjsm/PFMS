@@ -135,16 +135,22 @@ def compute_person_ledger(db: Session, person_id: int) -> dict:
     }
 
 
-def compute_all_balances(db: Session) -> dict[int, float]:
+def compute_all_balances(db: Session, user_id: int | None = None) -> dict[int, float]:
     """Compute balances for all accounts."""
-    accounts = db.query(Account).all()
+    query = db.query(Account)
+    if user_id is not None:
+        query = query.filter(Account.user_id == user_id)
+    accounts = query.all()
     return {acc.id: compute_account_balance(db, acc.id) for acc in accounts}
 
 
-def compute_net_worth(db: Session) -> dict:
+def compute_net_worth(db: Session, user_id: int | None = None) -> dict:
     """Net worth = total assets - total liabilities."""
-    accounts = db.query(Account).all()
-    balances = compute_all_balances(db)
+    query_acc = db.query(Account)
+    if user_id is not None:
+        query_acc = query_acc.filter(Account.user_id == user_id)
+    accounts = query_acc.all()
+    balances = compute_all_balances(db, user_id)
 
     total_assets = 0.0
     total_liabilities = 0.0
@@ -168,7 +174,11 @@ def compute_net_worth(db: Session) -> dict:
             elif acc.account_type == AccountType.CASH.value:
                 cash_balance += bal
 
-    people = db.query(Transaction.person_id).filter(Transaction.person_id.isnot(None)).distinct().all()
+    query_people = db.query(Transaction.person_id).filter(Transaction.person_id.isnot(None))
+    if user_id is not None:
+        query_people = query_people.filter(Transaction.user_id == user_id)
+    people = query_people.distinct().all()
+    
     money_lent = 0.0
     money_borrowed = 0.0
     for (pid,) in people:

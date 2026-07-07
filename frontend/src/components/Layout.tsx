@@ -1,82 +1,127 @@
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ArrowLeftRight, Wallet, Moon, Sun } from 'lucide-react';
+import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-
-const links = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { to: '/people', label: 'People', icon: Users },
-  { to: '/accounts', label: 'Accounts', icon: Wallet },
-];
+import { useMotionPreferences } from '../context/MotionPreferencesContext';
+import { NotificationBell } from './NotificationBell';
+import CommandPalette from './CommandPalette';
+import Sidebar from './Sidebar';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const location = useLocation();
+  const { shouldReduceMotion } = useMotionPreferences();
+
+  const userRaw = localStorage.getItem('pfms_user');
+  const user = userRaw ? JSON.parse(userRaw) : null;
+
+  const handleLogout = () => {
+    localStorage.removeItem('pfms_token');
+    localStorage.removeItem('pfms_user');
+    window.location.reload();
+  };
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-700 dark:bg-surface/90">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">
-              PF
+    <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-b from-[#0B132B] to-[#0D1B3E]">
+      {/* 1. Desktop Static Sidebar */}
+      <div className="hidden lg:flex fixed top-0 bottom-0 left-0 w-64 z-30">
+        <Sidebar />
+      </div>
+
+      {/* 2. Mobile Sidebar Overlay Drawer */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <div className="relative z-10 w-64 h-full">
+            <Sidebar onCloseMobile={() => setMobileSidebarOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* 3. Main Workspace Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-25 border-b border-slate-800/80 bg-[#090e1b]/80 backdrop-blur-md lg:pl-64">
+          <div className="mx-auto flex w-full items-center justify-between px-6 py-4">
+            {/* Left: Mobile hamburger menu toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-lg border border-slate-800 bg-slate-900/50 text-slate-300 hover:bg-slate-800 transition"
+                aria-label="Open navigation menu"
+              >
+                <Menu size={18} />
+              </button>
+
+              <div className="lg:hidden flex items-center gap-2">
+                <span className="font-extrabold text-sm text-slate-100 tracking-tight">PFMS</span>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-semibold leading-tight">PFMS</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Personal Finance</p>
+
+            {/* Right: Theme, Notifications, Profile */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleTheme}
+                className="rounded-xl border border-slate-800 bg-slate-900/50 p-2 text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+
+              <div className="flex items-center justify-center">
+                <NotificationBell />
+              </div>
+
+              {user && (
+                <div className="flex items-center gap-2 border-l border-slate-800 pl-4">
+                  <img
+                    src={user.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
+                    alt="avatar"
+                    className="h-8 w-8 rounded-full bg-slate-950 border border-slate-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                  />
+                  <div className="hidden flex-col sm:flex">
+                    <span className="text-xs font-bold text-slate-200 leading-tight">
+                      {user.full_name || user.username}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-semibold font-mono uppercase tracking-wider leading-none mt-0.5">
+                      @{user.username}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-xl border border-slate-800 bg-slate-900/50 p-2 text-slate-400 hover:text-red-400 hover:bg-red-950/20 active:scale-95 transition ml-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                    title="Logout"
+                    aria-label="Log out"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+        </header>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {links.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-light'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-surface-hover'
-                  }`
-                }
-              >
-                <Icon size={16} />
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-
-          <button
-            onClick={toggleTheme}
-            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-surface-hover"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
-
-        <nav className="flex gap-1 overflow-x-auto border-t border-slate-200 px-4 py-2 md:hidden dark:border-slate-700">
-          {links.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${
-                  isActive
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-slate-600 dark:text-slate-400'
-                }`
-              }
+        {/* Main Content Area - Shifted left to clear desktop sidebar */}
+        <main className="lg:pl-64 flex-1 w-full max-w-7xl mx-auto px-6 py-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.15 }}
             >
-              <Icon size={14} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+      <CommandPalette />
     </div>
   );
 }

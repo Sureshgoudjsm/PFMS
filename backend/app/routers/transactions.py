@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.logic.transactions import create_transaction
-from app.models import Transaction
+from app.models import Transaction, User
 from app.schemas import TransactionCreate, TransactionResponse
+from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -28,8 +29,9 @@ def list_transactions(
     person_id: int | None = None,
     account_id: int | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Transaction)
+    query = db.query(Transaction).filter(Transaction.user_id == current_user.id)
     if person_id:
         query = query.filter(Transaction.person_id == person_id)
     if account_id:
@@ -37,13 +39,24 @@ def list_transactions(
             (Transaction.from_account_id == account_id)
             | (Transaction.to_account_id == account_id)
         )
-    txns = query.order_by(Transaction.date.desc(), Transaction.id.desc()).offset(offset).limit(limit).all()
+    txns = (
+        query.order_by(Transaction.date.desc(), Transaction.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     return [_txn_response(t, db) for t in txns]
 
 
 @router.post("", response_model=TransactionResponse, status_code=201)
-def add_transaction(data: TransactionCreate, db: Session = Depends(get_db)):
+def add_transaction(
+    data: TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     payload = data.model_dump(exclude={"apply_processing_fee"})
+    payload["user_id"] = current_user.id
+    
     try:
         txn, fee_txn = create_transaction(
             db,
@@ -60,18 +73,27 @@ def add_transaction(data: TransactionCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{transaction_id}", response_model=TransactionResponse)
-def get_transaction(transaction_id: int, db: Session = Depends(get_db)):
+def get_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     txn = db.get(Transaction, transaction_id)
-    if not txn:
+    if not txn or txn.user_id != current_user.id:
         raise HTTPException(404, "Transaction not found")
     return _txn_response(txn, db)
 
 
 @router.delete("/{transaction_id}", status_code=204)
-def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     txn = db.get(Transaction, transaction_id)
-    if not txn:
+    if not txn or txn.user_id != current_user.id:
         raise HTTPException(404, "Transaction not found")
+        
     db.query(Transaction).filter(Transaction.parent_transaction_id == transaction_id).delete()
     db.delete(txn)
     db.commit()

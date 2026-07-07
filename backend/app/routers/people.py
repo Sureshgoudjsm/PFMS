@@ -2,24 +2,33 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.logic.balance import compute_account_balance, compute_person_ledger
-from app.models import Person
+from app.logic.balance import compute_person_ledger
+from app.models import Person, User
 from app.schemas import PersonCreate, PersonLedgerResponse, PersonResponse, PersonUpdate, TransactionResponse
+from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/people", tags=["People"])
 
 
 @router.get("", response_model=list[PersonResponse])
-def list_people(active_only: bool = False, db: Session = Depends(get_db)):
-    query = db.query(Person)
+def list_people(
+    active_only: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(Person).filter(Person.user_id == current_user.id)
     if active_only:
         query = query.filter(Person.active.is_(True))
     return query.order_by(Person.full_name).all()
 
 
 @router.post("", response_model=PersonResponse, status_code=201)
-def create_person(data: PersonCreate, db: Session = Depends(get_db)):
-    person = Person(**data.model_dump())
+def create_person(
+    data: PersonCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    person = Person(**data.model_dump(), user_id=current_user.id)
     db.add(person)
     db.commit()
     db.refresh(person)
@@ -27,17 +36,26 @@ def create_person(data: PersonCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{person_id}", response_model=PersonResponse)
-def get_person(person_id: int, db: Session = Depends(get_db)):
+def get_person(
+    person_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     person = db.get(Person, person_id)
-    if not person:
+    if not person or person.user_id != current_user.id:
         raise HTTPException(404, "Person not found")
     return person
 
 
 @router.put("/{person_id}", response_model=PersonResponse)
-def update_person(person_id: int, data: PersonUpdate, db: Session = Depends(get_db)):
+def update_person(
+    person_id: int,
+    data: PersonUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     person = db.get(Person, person_id)
-    if not person:
+    if not person or person.user_id != current_user.id:
         raise HTTPException(404, "Person not found")
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(person, key, value)
@@ -47,26 +65,30 @@ def update_person(person_id: int, data: PersonUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{person_id}", status_code=204)
-def delete_person(person_id: int, db: Session = Depends(get_db)):
+def delete_person(
+    person_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     person = db.get(Person, person_id)
-    if not person:
+    if not person or person.user_id != current_user.id:
         raise HTTPException(404, "Person not found")
     db.delete(person)
     db.commit()
 
 
 @router.get("/{person_id}/ledger", response_model=PersonLedgerResponse)
-def get_person_ledger(person_id: int, db: Session = Depends(get_db)):
+def get_person_ledger(
+    person_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     person = db.get(Person, person_id)
-    if not person:
+    if not person or person.user_id != current_user.id:
         raise HTTPException(404, "Person not found")
 
     ledger = compute_person_ledger(db, person_id)
-    transactions = (
-        db.query(Person)
-        .get(person_id)
-        .transactions
-    )
+    transactions = person.transactions
     txn_list = sorted(transactions, key=lambda t: t.date, reverse=True)
 
     return PersonLedgerResponse(

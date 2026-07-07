@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import TransactionList from '../components/TransactionList';
+import EmptyState from '../components/EmptyState';
 import {
   TRANSACTION_TYPES,
   transactionFieldRules,
@@ -10,6 +11,7 @@ import {
   type Transaction,
   type TransactionCreate,
 } from '../types';
+import { Sparkles, Calendar, Tag, Info, Landmark, HelpCircle, ArrowLeftRight } from 'lucide-react';
 
 const emptyForm: TransactionCreate = {
   date: new Date().toISOString().slice(0, 10),
@@ -32,6 +34,22 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeedSample = async () => {
+    setSeeding(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await api.seedSampleData();
+      setSuccess('Sample dataset seeded successfully!');
+      load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to seed sample data');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const rules = useMemo(() => transactionFieldRules(form.transaction_type), [form.transaction_type]);
 
@@ -112,176 +130,247 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Transactions</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h2 className="text-2xl font-black text-slate-100 tracking-tight">Transactions</h2>
+        <p className="text-xs text-slate-400 font-medium font-mono uppercase tracking-wider mt-0.5">
           Record income, expenses, transfers, and friend loans
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="card space-y-4">
-        <h3 className="text-lg font-semibold">New Transaction</h3>
+      {/* Transaction Entry Form */}
+      <form onSubmit={handleSubmit} className="card p-6 space-y-6 border border-slate-800 bg-slate-900/40">
+        <div>
+          <h3 className="text-base font-bold text-slate-200">New Transaction</h3>
+          <p className="text-[11px] text-slate-400">Record a ledger entry to track cash flow.</p>
+        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <label className="label">Date</label>
-            <input
-              type="date"
-              className="input"
-              required
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-            />
+        {/* Section 1: Transaction Details */}
+        <div className="space-y-4">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 font-mono border-b border-slate-800 pb-1">
+            Transaction Details
           </div>
-
-          <div className="sm:col-span-2">
-            <label className="label">Transaction Type</label>
-            <select
-              className="input"
-              value={form.transaction_type}
-              onChange={(e) => handleTypeChange(e.target.value)}
-            >
-              {TRANSACTION_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {rules.needsFrom && (
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="label">From Account</label>
+              <label htmlFor="transaction_type" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                Transaction Type
+              </label>
               <select
+                id="transaction_type"
                 className="input"
-                required
-                value={form.from_account_id ?? ''}
-                onChange={(e) =>
-                  setForm({ ...form, from_account_id: Number(e.target.value) || null })
-                }
+                value={form.transaction_type}
+                onChange={(e) => handleTypeChange(e.target.value)}
               >
-                <option value="">Select account</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.account_name} ({a.account_type})
+                {TRANSACTION_TYPES.map((t) => (
+                  <option key={t} value={t} className="bg-[#0f172a] text-slate-200">
+                    {t}
                   </option>
                 ))}
               </select>
             </div>
-          )}
 
-          {rules.needsTo && (
             <div>
-              <label className="label">To Account</label>
-              <select
+              <label htmlFor="amount" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                Amount (₹)
+              </label>
+              <input
+                id="amount"
+                type="number"
+                className="input text-lg font-bold"
+                required
+                min="0.01"
+                step="0.01"
+                value={form.amount || ''}
+                onChange={(e) => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Payment Info */}
+        <div className="space-y-4">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 font-mono border-b border-slate-800 pb-1">
+            Payment Info
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label htmlFor="date" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                Date
+              </label>
+              <input
+                id="date"
+                type="date"
                 className="input"
                 required
-                value={form.to_account_id ?? ''}
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+              />
+            </div>
+
+            {rules.needsFrom && (
+              <div>
+                <label htmlFor="from_account" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                  From Account
+                </label>
+                <select
+                  id="from_account"
+                  className="input"
+                  required
+                  value={form.from_account_id ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, from_account_id: Number(e.target.value) || null })
+                  }
+                >
+                  <option value="" className="bg-[#0f172a] text-slate-400">Select account</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id} className="bg-[#0f172a] text-slate-200">
+                      {a.account_name} ({a.account_type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {rules.needsTo && (
+              <div>
+                <label htmlFor="to_account" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                  To Account
+                </label>
+                <select
+                  id="to_account"
+                  className="input"
+                  required
+                  value={form.to_account_id ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, to_account_id: Number(e.target.value) || null })
+                  }
+                >
+                  <option value="" className="bg-[#0f172a] text-slate-400">Select account</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id} className="bg-[#0f172a] text-slate-200">
+                      {a.account_name} ({a.account_type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {rules.needsPerson && (
+              <div>
+                <label htmlFor="person" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                  Contact Person
+                </label>
+                <select
+                  id="person"
+                  className="input"
+                  required
+                  value={form.person_id ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, person_id: Number(e.target.value) || null })
+                  }
+                >
+                  <option value="" className="bg-[#0f172a] text-slate-400">Select contact</option>
+                  {people.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-[#0f172a] text-slate-200">
+                      {p.full_name} ({p.relationship_type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="category" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                Category
+              </label>
+              <select
+                id="category"
+                className="input"
+                value={form.category_id ?? ''}
                 onChange={(e) =>
-                  setForm({ ...form, to_account_id: Number(e.target.value) || null })
+                  setForm({ ...form, category_id: Number(e.target.value) || null })
                 }
               >
-                <option value="">Select account</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.account_name} ({a.account_type})
+                <option value="" className="bg-[#0f172a] text-slate-400">Optional</option>
+                {filteredCategories.map((c) => (
+                  <option key={c.id} value={c.id} className="bg-[#0f172a] text-slate-200">
+                    {c.category_name} ({c.parent_type})
                   </option>
                 ))}
               </select>
             </div>
-          )}
-
-          {rules.needsPerson && (
-            <div>
-              <label className="label">Person</label>
-              <select
-                className="input"
-                required
-                value={form.person_id ?? ''}
-                onChange={(e) =>
-                  setForm({ ...form, person_id: Number(e.target.value) || null })
-                }
-              >
-                <option value="">Select person</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.full_name} ({p.relationship_type})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="label">Category</label>
-            <select
-              className="input"
-              value={form.category_id ?? ''}
-              onChange={(e) =>
-                setForm({ ...form, category_id: Number(e.target.value) || null })
-              }
-            >
-              <option value="">Optional</option>
-              {filteredCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.category_name} ({c.parent_type})
-                </option>
-              ))}
-            </select>
           </div>
 
           <div>
-            <label className="label">Amount (₹)</label>
+            <label htmlFor="description" className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+              Description
+            </label>
             <input
-              type="number"
-              className="input"
-              required
-              min="0.01"
-              step="0.01"
-              value={form.amount || ''}
-              onChange={(e) => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="label">Description</label>
-            <input
+              id="description"
               className="input"
               value={form.description ?? ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="What was this for?"
+              placeholder="Starbucks coffee, rent payment, SBI salary, etc."
             />
           </div>
         </div>
 
         {rules.canApplyFee && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
             <input
               type="checkbox"
               checked={form.apply_processing_fee ?? false}
               onChange={(e) => setForm({ ...form, apply_processing_fee: e.target.checked })}
-              className="rounded border-slate-300 text-accent focus:ring-accent"
+              className="rounded border-slate-700 bg-surface-lowest text-purple-600 focus:ring-purple-500"
             />
-            Apply 2% processing fee (auto-creates Expense → Processing Charges)
+            Apply 2% processing fee (creates processing charge Expense entry)
           </label>
         )}
 
         {error && (
-          <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
+          <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-400">
             {error}
           </p>
         )}
         {success && (
-          <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">
+          <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-400">
             {success}
           </p>
         )}
 
-        <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save Transaction'}
-        </button>
+        <div className="flex justify-end border-t border-slate-800/80 pt-4">
+          <button type="submit" className="btn-primary flex items-center gap-2" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Save Transaction
+              </>
+            )}
+          </button>
+        </div>
       </form>
 
-      <TransactionList transactions={transactions} title="All Transactions" />
+      {/* Transactions List */}
+      {transactions.length === 0 ? (
+        <EmptyState
+          icon={ArrowLeftRight}
+          title="No transactions recorded"
+          description="Click below to seed dummy data, or log custom records via the form above."
+          actionLabel="Try with Sample Data"
+          onAction={handleSeedSample}
+          loading={seeding}
+        />
+      ) : (
+        <TransactionList
+          transactions={transactions}
+          title="All Transactions"
+          onSeedSample={handleSeedSample}
+          seeding={seeding}
+        />
+      )}
     </div>
   );
 }

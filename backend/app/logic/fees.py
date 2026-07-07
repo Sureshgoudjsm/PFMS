@@ -40,6 +40,7 @@ def create_processing_fee_transaction(
 
     category = get_or_create_processing_category(db)
     fee_txn = Transaction(
+        user_id=parent.user_id,
         date=parent.date,
         transaction_type=TransactionType.EXPENSE.value,
         from_account_id=parent.from_account_id,

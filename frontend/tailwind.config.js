@@ -4,15 +4,27 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Hanken Grotesk"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+      },
       colors: {
+        background: '#0B132B',
+        primary: '#a855f7',
+        'primary-container': 'rgba(168, 85, 247, 0.15)',
+        'on-primary-container': '#c084fc',
         surface: {
-          DEFAULT: '#0f172a',
-          card: '#1e293b',
-          hover: '#334155',
+          lowest: '#090e1b',
+          low: '#0d1527',
+          DEFAULT: '#121c35',
+          high: '#182544',
+          highest: '#1f3056',
+          card: '#121c35',
+          hover: '#1f3056',
         },
         accent: {
-          DEFAULT: '#6366f1',
-          light: '#818cf8',
+          DEFAULT: '#a855f7',
+          light: '#c084fc',
         },
       },
     },

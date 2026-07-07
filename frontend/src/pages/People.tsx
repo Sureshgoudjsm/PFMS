@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { User, ChevronRight } from 'lucide-react';
+import { User, ChevronRight, Users, Plus, X } from 'lucide-react';
 import { api } from '../api/client';
 import TransactionList from '../components/TransactionList';
+import EmptyState from '../components/EmptyState';
 import { formatCurrency } from '../utils/format';
 import type { Person, PersonLedger } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
@@ -46,8 +47,9 @@ export default function PeoplePage() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+        <p className="text-xs text-slate-400 font-mono uppercase tracking-widest">Loading contacts...</p>
       </div>
     );
   }
@@ -56,121 +58,162 @@ export default function PeoplePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">People Manager</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h2 className="text-2xl font-black text-slate-100 tracking-tight">People Manager</h2>
+          <p className="text-xs text-slate-400 font-medium font-mono uppercase tracking-wider mt-0.5">
             Track friend loans and repayment timelines
           </p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'Add Person'}
+        <button
+          className="btn-primary flex items-center gap-2"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? (
+            <>
+              <X size={15} />
+              <span>Cancel</span>
+            </>
+          ) : (
+            <>
+              <Plus size={15} />
+              <span>Add Person</span>
+            </>
+          )}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="card grid gap-4 sm:grid-cols-3">
+        <form onSubmit={handleCreate} className="card p-6 space-y-4 border border-slate-800 bg-slate-900/40">
           <div>
-            <label className="label">Full Name</label>
-            <input
-              className="input"
-              required
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            />
+            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono">Create Contact Card</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Add a new person to record loans or payouts.</p>
           </div>
-          <div>
-            <label className="label">Relationship</label>
-            <select
-              className="input"
-              value={form.relationship_type}
-              onChange={(e) => setForm({ ...form, relationship_type: e.target.value })}
-            >
-              {RELATIONSHIP_TYPES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">Full Name</label>
+              <input
+                className="input"
+                required
+                value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                placeholder="e.g. Sunny"
+              />
+            </div>
+            <div>
+              <label className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">Relationship</label>
+              <select
+                className="input"
+                value={form.relationship_type}
+                onChange={(e) => setForm({ ...form, relationship_type: e.target.value })}
+              >
+                {RELATIONSHIP_TYPES.map((r) => (
+                  <option key={r} value={r} className="bg-[#0f172a] text-slate-200">
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label block text-[10px] font-semibold uppercase tracking-wider text-slate-300">Notes</label>
+              <input
+                className="input"
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="e.g. Roommate, sibling, etc."
+              />
+            </div>
           </div>
-          <div>
-            <label className="label">Notes</label>
-            <input
-              className="input"
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-            />
-          </div>
-          <div className="sm:col-span-3">
+          <div className="flex justify-end border-t border-slate-800 pt-4">
             <button type="submit" className="btn-primary">
-              Save Person
+              Save Contact
             </button>
           </div>
         </form>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="card p-0 lg:col-span-1">
-          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <h3 className="font-semibold">Contacts</h3>
-          </div>
-          <div className="max-h-[480px] divide-y divide-slate-100 overflow-y-auto dark:divide-slate-700">
-            {people.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedId(p.id)}
-                className={`flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-surface-hover ${
-                  selectedId === p.id ? 'bg-accent/5 dark:bg-accent/10' : ''
-                }`}
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent">
-                  <User size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{p.full_name}</p>
-                  <p className="text-xs text-slate-500">{p.relationship_type}</p>
-                </div>
-                <ChevronRight size={16} className="text-slate-400" />
-              </button>
-            ))}
+        {/* Left Pane: Contacts List */}
+        <div className="lg:col-span-1 flex flex-col min-h-[300px]">
+          <div className="card p-0 overflow-hidden flex-1 border border-slate-800 bg-slate-900/40">
+            <div className="border-b border-slate-800/80 px-4 py-3 bg-[#090e1b]/40">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">Contacts</h3>
+            </div>
+            {people.length === 0 ? (
+              <div className="p-4">
+                <EmptyState
+                  icon={Users}
+                  title="No contacts yet"
+                  description="Use the button in the top right to register your first contact."
+                />
+              </div>
+            ) : (
+              <div className="max-h-[480px] divide-y divide-slate-800/80 overflow-y-auto">
+                {people.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedId(p.id)}
+                    className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition ${
+                      selectedId === p.id
+                        ? 'bg-purple-500/15 text-purple-300 border-l-2 border-l-purple-500 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]'
+                        : 'text-slate-300 hover:bg-slate-800/20'
+                    }`}
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner shrink-0">
+                      <User size={16} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-sm">{p.full_name}</p>
+                      <p className="text-[10px] text-slate-500 font-medium font-mono uppercase tracking-wider mt-0.5">{p.relationship_type}</p>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-500 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Right Pane: Contact Ledger Detail */}
         <div className="lg:col-span-2">
           {ledger ? (
-            <div className="space-y-4">
-              <div className="card">
-                <h3 className="text-xl font-bold">{ledger.full_name}</h3>
-                <p className="text-sm text-slate-500">{ledger.relationship_type}</p>
-                {ledger.notes && (
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{ledger.notes}</p>
-                )}
+            <div className="space-y-6 animate-fade-in">
+              <div className="card space-y-4 border border-slate-800 bg-slate-900/40">
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-200">{ledger.full_name}</h3>
+                  <p className="text-xs text-slate-500 font-semibold font-mono uppercase tracking-wider mt-0.5">{ledger.relationship_type}</p>
+                  {ledger.notes && (
+                    <p className="mt-2 text-xs text-slate-400 bg-slate-950/20 p-2 rounded-lg border border-slate-850">{ledger.notes}</p>
+                  )}
+                </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-lg bg-violet-500/10 p-3">
-                    <p className="text-xs text-slate-500">Outstanding Lent</p>
-                    <p className="text-lg font-bold text-violet-600 dark:text-violet-400">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 shadow-sm">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Outstanding Lent</p>
+                    <p className="text-xl font-extrabold text-violet-400 mt-1">
                       {formatCurrency(ledger.ledger.outstanding_lent)}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-[9px] text-slate-500 font-medium mt-1">
                       {formatCurrency(ledger.ledger.total_lent)} lent ·{' '}
                       {formatCurrency(ledger.ledger.total_lent_returned)} returned
                     </p>
                   </div>
-                  <div className="rounded-lg bg-amber-500/10 p-3">
-                    <p className="text-xs text-slate-500">Outstanding Borrowed</p>
-                    <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 shadow-sm">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Outstanding Borrowed</p>
+                    <p className="text-xl font-extrabold text-amber-400 mt-1">
                       {formatCurrency(ledger.ledger.outstanding_borrowed)}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-[9px] text-slate-500 font-medium mt-1">
                       {formatCurrency(ledger.ledger.total_borrowed)} borrowed ·{' '}
                       {formatCurrency(ledger.ledger.total_borrowed_returned)} repaid
                     </p>
                   </div>
-                  <div className="rounded-lg bg-accent/10 p-3">
-                    <p className="text-xs text-slate-500">Net Position</p>
-                    <p className="text-lg font-bold text-accent">
+
+                  <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4 shadow-sm">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Net Position</p>
+                    <p className="text-xl font-extrabold text-purple-400 mt-1">
                       {formatCurrency(ledger.ledger.net_position)}
                     </p>
-                    <p className="text-xs text-slate-400">Positive = they owe you</p>
+                    <p className="text-[9px] text-slate-500 font-medium mt-1">Positive = they owe you</p>
                   </div>
                 </div>
               </div>
@@ -181,8 +224,12 @@ export default function PeoplePage() {
               />
             </div>
           ) : (
-            <div className="card flex h-64 items-center justify-center text-slate-500">
-              Select a person to view their loan ledger and timeline
+            <div className="h-full flex items-center justify-center">
+              <EmptyState
+                icon={User}
+                title="Select a contact"
+                description="Click on any contact in the left pane to view their loan ledger, total payouts, and timeline."
+              />
             </div>
           )}
         </div>

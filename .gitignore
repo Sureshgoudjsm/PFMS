@@ -1,0 +1,31 @@
+# Python / Backend
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.db
+*.db.backup-*
+.env
+.venv
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+backups/
+data_export.json
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

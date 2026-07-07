@@ -85,6 +85,9 @@ export interface DashboardData {
   summary: DashboardSummary;
   trend: TrendPoint[];
   recent_transactions: Transaction[];
+  total_accounts?: number;
+  total_transactions?: number;
+  has_sample_data?: boolean;
 }
 
 export const TRANSACTION_TYPES = [
@@ -161,4 +164,52 @@ export function transactionFieldRules(type: string) {
   ].includes(type);
 
   return { needsFrom, needsTo, needsPerson, canApplyFee };
+}
+
+export interface ChatRequest {
+  message: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  intent: string;
+  confidence: number;
+  reply: string;
+  created: Record<string, any> | null;
+  executed: boolean;
+}
+
+export interface SummaryResponse {
+  summary: string;
+  stats: Record<string, any>;
+}
+
+export interface PreviewResponse {
+  preview_id: string;
+  intent: string;
+  intent_data: Record<string, any>;
+  original_text: string;
+}
+
+export interface ConfirmResponse {
+  status: string;
+  transaction_id?: number | null;
+  timestamp?: number | null;
+}
+
+export interface UndoResponse {
+  success: boolean;
+  reason?: string | null;
+}
+
+export interface ForecastDayEvents {
+  salary_added: boolean;
+  emi_deducted: boolean;
+  discretionary_spend: number;
+}
+
+export interface ForecastDay {
+  date: string;
+  balance: number;
+  events: ForecastDayEvents;
 }
