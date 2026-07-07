@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { formatCurrency, formatDate } from '../utils/format';
-import { Download, FileText, FileJson, Calendar } from 'lucide-react';
+import { FileText, FileJson, Calendar } from 'lucide-react';
 import type { Account } from '../types';
 
 interface AuditSummary {

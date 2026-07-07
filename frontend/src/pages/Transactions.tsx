@@ -11,7 +11,7 @@ import {
   type Transaction,
   type TransactionCreate,
 } from '../types';
-import { Sparkles, Calendar, Tag, Info, Landmark, HelpCircle, ArrowLeftRight } from 'lucide-react';
+import { ArrowLeftRight } from 'lucide-react';
 
 const emptyForm: TransactionCreate = {
   date: new Date().toISOString().slice(0, 10),

@@ -7,7 +7,7 @@ import { HealthScoreCard } from '../components/HealthScoreCard';
 import EmptyState from '../components/EmptyState';
 import type { DashboardData } from '../types';
 import { formatCurrency } from '../utils/format';
-import { Sparkles, TrendingUp, Info, Bot, Shield, ChevronDown, Check, Settings, LayoutGrid } from 'lucide-react';
+import { Sparkles, TrendingUp, Info, Bot, Shield, ChevronDown, Check, LayoutGrid } from 'lucide-react';
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);

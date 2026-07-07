@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useMotionValue, useSpring } from 'framer-motion';
 import {
-  TrendingUp,
+
   TrendingDown,
   Wallet,
   Banknote,
