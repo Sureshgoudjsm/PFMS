@@ -232,7 +232,7 @@ class UndoResponse(BaseModel):
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
-    email: str
+    email: Optional[str] = None
     password: str = Field(..., min_length=6)
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
